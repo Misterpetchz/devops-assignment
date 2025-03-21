@@ -33,10 +33,12 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository }}:latest .
-          docker tag ghcr.io/${{ github.repository }}:latest ghcr.io/${{ github.repository }}:${{ github.sha }}
+          REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          docker build -t ghcr.io/${REPO_NAME}:latest .
+          docker tag ghcr.io/${REPO_NAME}:latest ghcr.io/${REPO_NAME}:${{ github.sha }}
 
       - name: Push Docker image to GitHub Container Registry
         run: |
-          docker push ghcr.io/${{ github.repository }}:latest
-          docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
+          REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          docker push ghcr.io/${REPO_NAME}:latest
+          docker push ghcr.io/${REPO_NAME}:${{ github.sha }}
