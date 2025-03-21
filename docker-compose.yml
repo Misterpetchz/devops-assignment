@@ -1,0 +1,42 @@
+name: issie-assignment
+services:
+  app:
+    container_name: app
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongo:27017/
+    networks:
+      - backend
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:6.0
+    container_name: mongodb
+    restart: always
+    ports:
+      - '27017:27017'
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  mongo_data:
+    driver: local
+  minio_data:
+    driver: local
