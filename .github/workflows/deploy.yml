@@ -31,14 +31,31 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker image
+      - name: Define Image Name
         run: |
-          REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
-          docker build -t ghcr.io/${REPO_NAME}:latest .
-          docker tag ghcr.io/${REPO_NAME}:latest ghcr.io/${REPO_NAME}:${{ github.sha }}
+          USERNAME=$(echo "${{ github.actor }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME=app
+          echo "USERNAME=$USERNAME" >> $GITHUB_ENV
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
 
-      - name: Push Docker image to GitHub Container Registry
+      - name: Create .env File
         run: |
-          REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
-          docker push ghcr.io/${REPO_NAME}:latest
-          docker push ghcr.io/${REPO_NAME}:${{ github.sha }}
+          echo "MONGO_USERNAME=${{ secrets.MONGO_USERNAME }}" >> .env
+          echo "MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}" >> .env
+        shell: bash
+
+      - name: Build Docker Image
+        run: |
+          docker build --env-file .env -t ghcr.io/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}:latest .
+          docker tag ghcr.io/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}:latest ghcr.io/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Push Docker Image to GitHub Container Registry
+        run: |
+          docker push ghcr.io/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          docker push ghcr.io/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Set Package to Public (First-Time Only)
+        run: |
+          gh api -X PATCH /user/packages/container/${{ env.IMAGE_NAME }}/visibility --field visibility=public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
