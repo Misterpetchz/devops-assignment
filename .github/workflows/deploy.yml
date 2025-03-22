@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,14 +20,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
@@ -34,20 +30,14 @@ jobs:
       - name: Define Image Name
         run: |
           USERNAME=$(echo "${{ github.actor }}" | tr '[:upper:]' '[:lower:]')
-          IMAGE_NAME=app
+          IMAGE_NAME=app  # Change to your app name
           echo "USERNAME=$USERNAME" >> $GITHUB_ENV
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
 
-      - name: Build Docker Image
+      - name: Build and Push Docker Image
         run: |
           docker buildx build \
             --build-arg DB_USERNAME=${{ secrets.MONGO_USERNAME }} \
             --build-arg DB_PASSWORD=${{ secrets.MONGO_PASSWORD }} \
             -t ghcr.io/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}:latest \
             --push .
-
-      - name: Set Package to Public (First-Time Only)
-        run: |
-          gh api -X PATCH /user/packages/container/${{ env.IMAGE_NAME }}/visibility --field visibility=public
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
